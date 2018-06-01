@@ -1,0 +1,52 @@
+---
+title: "Rselfproject"
+output:
+  word_document: default
+  html_document: default
+---
+## 1. 요약(초록)
+
+
+## 2. 분석 주제
+소득분위별 사회적 지원체계의 차이
+
+
+## 3. 데이터 선정
+#### 데이터: 2015년 서울복지실태조사
+
+#### 데이터 소개(출처, 다운로드 URL, 특성, 구성)
+- 출처 : 서울연구데이터서비스 [http://data.si.re.kr/sisurvey2015er17]
+
+- 특성 : 본 데이터는 서울특별시와 서울연구원이 주관하여 조사한 자료이며, 서울시민의 생활실태와 복지 욕구 변화 추적을 위한 데이터 구축과 서울시 복지 정책 수립 및 집행성과 모니터링을 위한 근거 자료 수집을 위해 조사한 것이다.
+
+- 구성 : 2015년 서울특별시에 거주하는 3019가구를 대상으로 조사하였으며 주로 경제활동, 건강과 의료이용, 가족생활과 여가 및 사회활동, 복지서비스 이용, 복지의식 및 욕구에 관한 변수로 구성되어 있다. 
+
+## 4. 분석: 코드, 표, 그래프, 결과 해석
+### 1) 분석목적 및 방법
+
+
+### 2) 변수 검토 및 전처리
+#### 패키지 로드하기
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library(ggplot2)
+library(dplyr)
+library(readxl)
+library(tidyr)
+```
+
+#### 데이터 불러오기
+복사본을 만들어 분석에 활용한다.
+```{r warning=FALSE}
+welfare_data <- read_excel("welfare_data.xlsx")
+welfare <- welfare_data
+```
+
+#### 데이터 검토하기
+데이터의 구조와 특징을 파악한다.
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+head(welfare)
+tail(welfare)
+summary(welfare)
+dim(welfare)
+```
+
