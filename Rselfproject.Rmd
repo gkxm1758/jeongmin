@@ -1,14 +1,12 @@
 ---
-title: "Rselfproject"
-output:
-  word_document: default
-  html_document: default
+title: "소득분위별 사회적 지원체계의 차이"
+output: github_document
 ---
 ## 1. 요약(초록)
-
+소득분위별로 사회적 지원체계로 볼 수 있는 걱정거리 상의대상과 경제적 도움을 주는 대상에 차이가 있는지 분석해보았다. 그 결과 소득의 낮을수록 걱정거리를 상의할 대상이 없는 비율이 높게 나와 소득이 낮은 사람에게 사회적 지원체계도 부족하다는 분석을 할 수 있다. 또한 경제적 도움을 줄 수 있는 여러 사회적 지원대상 중 정부의 비율이 미미하게 나왔다. 이를 정부가 실시하고 있는 복지서비스 사업에 대한 인지여부와 연결지어 분석한 결과 정부사업에 대한 인지율이 적은 수치로 나타났다. 
 
 ## 2. 분석 주제
-소득분위별 사회적 지원체계의 차이
+본 보고서는 서울복지실태조사 데이터를 통해 소득분위별 사회적 지원체계의 차이에 대한 분석을 하고자 한다. 
 
 
 ## 3. 데이터 선정
@@ -23,9 +21,10 @@ output:
 
 ## 4. 분석: 코드, 표, 그래프, 결과 해석
 ### 1) 분석목적 및 방법
-
+소득분위별 사회적 지원체계의 차이가 있는지 알아보고 차이가 있다면, 어떤 영향으로 인해 차이가 발생하는지 알아보고자 한다. 분석 방법은 1차적으로 소득수준에 따라 집단을 구성한 후, 주로 도움을 받는 사회적 지원체계의 항목별 비율을 구한다. 1차분석을 통해 높은비율 혹은 낮은비율을 차지한 항목을 분석하고 다른 변수와 연결지어서 왜 항목별 비율이 차이가 나는지 2차분석한다. 
 
 ### 2) 변수 검토 및 전처리
+
 #### 패키지 로드하기
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 library(ggplot2)
@@ -35,18 +34,211 @@ library(tidyr)
 ```
 
 #### 데이터 불러오기
-복사본을 만들어 분석에 활용한다.
-```{r warning=FALSE}
+복사본을 만들어 분석에 활용
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 welfare_data <- read_excel("welfare_data.xlsx")
 welfare <- welfare_data
 ```
 
-#### 데이터 검토하기
-데이터의 구조와 특징을 파악한다.
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
-head(welfare)
-tail(welfare)
-summary(welfare)
-dim(welfare)
+#### 필요한 변수 정제하기
+*소득변수*
+
+소득과 관련된 변수의 이름 변경
+```{r}
+welfare <- rename(welfare, income=B10_Total)
 ```
 
+코드북을 보면 999999로 표기되어 있는 데이터는 모름또는 무응답이기 때문에 결측치로 처리한 후 확인
+```{r}
+welfare$income <- ifelse(welfare$income==999999, NA, welfare$income)
+table(is.na(welfare$income))
+```
+
+일정한 기준에 따라 소득변수의 범주를 설정하기 위해 소득변수를 검토
+```{r warning=FALSE, paged.print=FALSE}
+summary(welfare$income)
+qplot(welfare$income) + xlim(0,10000)
+```
+
+검토 결과, 하위10%에 해당하는 소득이 1천만원 이하이고 1억 이상의 소득이 나타는 가구는 매우 적기 때문에 아래같이 범주를 구성
+```{r}
+welfare$income <- ifelse(welfare$income<1000, "1천 미만",
+                         ifelse(welfare$income<2500, "1천~2천5백",
+                                ifelse(welfare$income<5000, "2천5백~5천",
+                                       ifelse(welfare$income<7000, "5천~7천5백",
+                                              ifelse(welfare$income<10000, "7천5백~1억", "1억 이상")))))
+qplot(welfare$income)
+```
+
+*사회적 지원체계변수(걱정거리 상의)*
+
+걱정거리 상의에 관한 변수의 이름 변경 후, 변수와 결측치 검토
+```{r}
+welfare <- rename(welfare, consult=D5)
+table(welfare$consult)
+table(is.na(welfare$consult))
+```
+
+알기 쉽게 항목에 이름 부여
+```{r warning=FALSE}
+welfare$consult <- 
+  ifelse(welfare$consult==1, "따로 사는 부모",
+         ifelse(welfare$consult==2, "따로 사는 자녀",
+                ifelse(welfare$consult==3, "기타 친인척",
+                       ifelse(welfare$consult==4, "친구,동료",
+                              ifelse(welfare$consult==5, "이웃",
+                                     ifelse(welfare$consult==6, "전문상담가",
+                                            ifelse(welfare$consult==7, "종교인",
+                                                   ifelse(welfare$consult==8, "기타", "상의할 곳 없음"))))))))
+```
+
+*사회적 지원체계변수(경제적 도움)*
+
+걱정거리 상의 변수와 동일하게 변수 정제
+```{r}
+welfare <- rename(welfare, help=D6)
+table(welfare$help)
+table(is.na(welfare$help))
+
+welfare$help <- 
+  ifelse(welfare$help==1, "따로 사는 부모",
+         ifelse(welfare$help==2, "따로 사는 자녀",
+                ifelse(welfare$help==3, "기타 친인척",
+                       ifelse(welfare$help==4, "친구,동료",
+                              ifelse(welfare$help==5, "이웃",
+                                     ifelse(welfare$help==6, "회사",
+                                            ifelse(welfare$help==7, "정부",
+                                                   ifelse(welfare$help==8, "기타", "도움 받은 곳 없음"))))))))
+
+```
+
+
+정제된 변수들로만 구성된 데이터프레임 생성
+```{r warning=FALSE}
+welfare_ss <- welfare %>%
+  filter(!is.na(income)) %>% 
+  select(income,consult,help)
+welfare_ss
+```
+
+*기초생활보장 서비스 인지여부 변수*
+
+기초생활보장 서비스 변수명 변경
+service1은 서울형 기초보장제도, service2는 긴급복지지원, service3은 희망플러스 통장, service4는 꿈나래 통장을 의미한다.
+```{r}
+welfare <- rename(welfare, service1=E1_1_1, service2=E1_1_2, service3=E1_1_3, service4=E1_1_4)
+```
+
+
+### 3) 분석 및 해석
+
+#### 소득분위별 걱정거리 상의대상 분석
+```{r}
+welfare_consult<- welfare_ss %>%
+  group_by(income,consult) %>% 
+  summarise(n=n()) %>% 
+  mutate(ratio=round(n/sum(n)*100,1)) %>% 
+  select(income, consult, ratio)
+welfare_consult
+```
+
+좀 더 분석하기 편한 형태로 만들기 위해서 행,열의 배열과 순서를 변경
+```{r}
+welfare_consult_spread <- spread(welfare_consult,consult,ratio)
+welfare_consult_spread <- welfare_consult_spread[c(2,3,4,5,6,1),c(1,4,5,3,10,7,8,9,2,6)]
+```
+
+NA 값이 나타나는 데이터가 있는데 이는 그 항목을 선택한 응답원이 없기 때문이다. 따라서 NA 값을 0으로 대체
+```{r}
+table(is.na(welfare_consult_spread))
+welfare_consult_spread[is.na(welfare_consult_spread)] <- 0
+```
+
+data frame의 생략되지 않고 전부가 다 보이게 한 후, 출력
+```{r}
+options(dplyr.print_max = 1e10)
+welfare_consult_spread
+```
+
+- 걱정거리가 생겼을 때 함께 사는 가족 외에 주로 누구와 상의 하는지를 소득분위별로 조사하였다.
+- 소득분위와 상관없이 친구 또는 동료와 상의하는 비율이 가장 높게 나왔다. 그 다음으로 따로 사는 가족(부모와 자녀)과 상의하는 비율이 높게 나왔다.
+- 소득분위가 낮을 수록 상의할 곳이 없다고 응답하는 비율이 높게 나왔다. 이는 소득분위가 낮을수록 걱정거리를 의논하는 사회적 지원체계도 부족한 것을 알 수 있다.
+
+
+#### 소득분위별 경제적 도움대상 분석
+걱정거리 상의대상 분석과 동일하게 분석
+```{r}
+welfare_help<- welfare_ss %>% 
+  group_by(income, help) %>% 
+  summarise(nn=n()) %>% 
+  mutate(ratio2=round(nn/sum(nn)*100,1)) %>% 
+  select(income, help, ratio2)
+welfare_help
+
+# 행,열의 배열과 순서 변경
+welfare_help_spread <- spread(welfare_help,help,ratio2)
+welfare_help_spread <- welfare_help_spread[c(2,3,4,5,6,1),c(1,5,6,3,9,7,10,8,2,4)]
+
+# 결측치 0으로 대체
+table(is.na(welfare_help_spread))
+welfare_help_spread[is.na(welfare_help_spread)] <- 0
+
+welfare_help_spread
+
+```
+- 경제적으로 여려움을 겪을 때 함께 사는 가족외에 주로 누구에게 도움을 받는지를 소둑분위별로 분석하였다.
+- 걱정거리 상의 변수와 비슷하게 소득분위와 상관없이 친구 또는 동료에게 도움을 청하는 비율이 대체로 높게 나왔다.
+- 1억이상의 소득분위자들을 제외한 나머지 소득분위자들의 경제적으로 어려울 때 도움을 받을 곳이 없다는 비율이 20%이상으로 나왔다.
+- 반면에 정부의 도움을 받는 비율은 3%도 안된다. 경제적으로 지원이 필요한 연소득 1천만원미만인 응답원이 정부의 도움을 받는 비율은 2.4%에 불과하다. 이에 대해 왜 정부의 경제적 도움을 받지 못하는 것인지에 대한 의문이 생겼다. - 기초생활보장 복지 서비스에 대한 인지 여부의 영향이 있는지 추가 분석을 해본다.
+
+
+### 1천만원 미만의 소득분위자들의 기초생활보장 서비스 인지여부
+1천만원 미만의 소득자분위자들만 추출하여 현재 실시되고 있는 경제 복지사업들의 인지여부를 백분율로 나타낸다.
+```{r}
+service_know <- welfare %>% 
+  filter(income=="1천 미만") %>% 
+  select(income, service1,service2,service3,service4)
+
+dim(service_know)
+
+a <- service_know %>% 
+  filter(service1 %in% c(3,4)) %>%
+  group_by(income) %>% 
+  summarise(n=n()) %>% 
+  mutate(ratio=n/253*100) %>% 
+  select(ratio)
+b <- service_know %>% 
+  filter(service2 %in% c(3,4)) %>%
+  group_by(income) %>% 
+  summarise(n=n()) %>% 
+  mutate(ratio=n/253*100) %>% 
+  select(ratio)
+c <- service_know %>% 
+  filter(service3 %in% c(3,4)) %>%
+  group_by(income) %>% 
+  summarise(n=n()) %>% 
+  mutate(ratio=n/253*100) %>% 
+  select(ratio)
+d <- service_know %>% 
+  filter(service4 %in% c(3,4)) %>%
+  group_by(income) %>% 
+  summarise(n=n()) %>% 
+  mutate(ratio=n/253*100) %>% 
+  select(ratio)
+
+service_know <- bind_rows(a,b,c,d)
+service_know <- service_know %>% 
+  mutate(service=c("service1","service2","service3","service4"))
+service_know
+```
+- 서울형 기초보장제도만 20% 정도 인지하고 있고 나머지 사업들은 7%미만으로 거의 모르고 있다고 할 수 있다.
+- 정부의 경제적 도움을 받는 비율이 적은 이유 중 하나로 정부가 제공하는 복지사업에 대한 정보가 없는 것으로 알 수 있다.
+
+### 5. 논의
+#### 1) 한계점과 비판점 
+- 소득분위가 낮을 수록 걱정거리를 상의할 곳이 없다는 비율이 높게 나온 이유에 대해서는 분석을 하지 못하였다.
+- 정부의 경제적 복지서비스에 대한 인지여부외에 추가적으로 정부의 도움을 받는 비율이 적게 나온 원인에 대해 분석하지 못하였다. 
+
+#### 2) 추후 분석 방향
+- 소득분위가 낮을 수록 걱정거리를 상의할 곳이 없다는 비율이 높게 나온 원인에 대해서 분석하여 소득분위가 낮은 계층에게도 사회적 지원체계를 다양하게 구축하는 방안에 대해서 분석해보도록 한다.
+- 복지서비스에 대한 인지여부에 대해 더 심층적으로 왜 인지율이 적은지에 대해서도 분석하여 어떻게 해야 인지율을 높여서 복지서비스를 누릴 수 기회를 제공할 수 있는지에 관해서도 분석해보도록 한다.  
